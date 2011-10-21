@@ -64,14 +64,16 @@ Templates (& URLs)
 
 All templates go in a 'multiblogs' directory in your TEMPLATE_DIR:
 
-### blog_set_list.html (/)
+```
+blog_set_list.html (/)
 
-### blog_set_detail.html (/<blog-set-slug>/)
+blog_set_detail.html (/<blog-set-slug>/)
 
-### blog_detail.html (/<blog-set-slug>/<blog-slug>/)
+blog_detail.html (/<blog-set-slug>/<blog-slug>/)
 
-### post_year_archive.html (/<blog-set-slug>/<blog-slug>/<YYYY?year>/)
+post_year_archive.html (/<blog-set-slug>/<blog-slug>/<YYYY?year>/)
 
-### post_detail.html (/<blog-set-slug>/<blog-slug>/<YYYY?year>/<slug>/)
+post_detail.html (/<blog-set-slug>/<blog-slug>/<YYYY?year>/<slug>/)
+```
 
 
