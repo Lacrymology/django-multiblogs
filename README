@@ -21,6 +21,16 @@ http://yourschool.com/awesome-blog/2011/one-great-post/
 Of course, you can't mix and match that kind of thing, as you need to set the variable ```MULTIBLOGS_WITHOUT_SETS = TRUE``` so that we
 can properly re-route urls and what-not.
 
+### Big, huge caveat:
+This app was built with a custom version of django-articles. The Article
+model in codekoala's project is awesome, but a bitch to reuse elsewhere
+on a site, as Articles would get listed all over the place if they were
+save once. My fork of
+[django-articles](http://github.com/powellc/django-articles) creates an
+abstract base class, ArticleBase, which multiblogs uses to do most of
+it's lifting. You can "pip install" this fork using my pypi server at
+pypi.onecardinal.com.
+
 Install
 ---------
 
