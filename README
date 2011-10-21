@@ -7,9 +7,11 @@ on the website, multiblogs allows for multiple students to have their own blogs 
 
 URL examples of this scenario, when app is wired up to the base url of the site:
 
+```
 http://yourschool.com/student-voices/the-more-you-know/2011/our-new-principal/
 http://yourschool.com/grade-7/fairys-and-goblins/2011/how-to-slay-werewolves/
 http://yourschool.com/artsy-fartsy/photos-n-more/
+```
 
 Maybe you don't need blog sets? Just multiple different blogs. That's cool. Just go ahead and set your particluar blog to be part 
 of no set and it will hookup to the default url:
@@ -55,6 +57,7 @@ urlpatterns += patterns('',
     (r'^blogs/', include('multiblogs.urls')),
     ...
 )
+```
 
 Templates (& URLs)
 --------------------
