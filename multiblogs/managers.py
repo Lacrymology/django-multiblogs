@@ -3,23 +3,11 @@ from datetime import datetime
 
 class PublishedManager(models.Manager):
 
-    def active(self):
-        """
-        Retrieves all active posts which have been published.
-        
-        """
+    def get_query_set(self):
+        return super(PublishedManager, self).get_query_set().filter(published=True)
+
+class PublishedPostManager(models.Manager):
+    def get_query_set(self):
         now = datetime.now()
-        return self.get_query_set().filter(published_on__lte=now)
-
-    def live(self, user=None):
-        """Retrieves all live posts"""
-
-        qs = self.active()
-
-        if user is not None and user.is_superuser:
-            # superusers get to see all entries 
-            return qs
-        else:
-            # only show live entries to regular users
-            return qs.filter(published=True)
+        return super(PublishedPostManager, self).get_query_set().filter(publish_date__lte=now, is_active=True)
 

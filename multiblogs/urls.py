@@ -1,37 +1,26 @@
 from django.conf import settings
 from django.conf.urls.defaults import *
 from django.views.generic import DetailView, ListView
-from multiblogs.models import BlogSet, Blog, Post
 
+from multiblogs.models import Blog, Post
+from multiblogs.views import BlogDetailView, PostYearListView, PostDetailView
 
-# custom views vendors
-urlpatterns = patterns('',
-    url(r'^$', 
-        view=ListView.as_view(
-            model=BlogSet, 
-            queryset=BlogSet.published_objects.all()), 
-            name="mb-blog-set-list"),
-    url(r'^(?P<slug>[-\w]+)/$', 
-        view=DetailView.as_view(
-            model=BlogSet, 
-            queryset=BlogSet.published_objects.all()), 
-            name="mb-blog-set-detail"),
+WITHOUT_SETS= getattr(settings, 'MULTIBLOGS_WITHOUT_SETS', False)
+if not WITHOUT_SETS: 
+    from multiblogs.models import BlogSet
+    from multiblogs.views import BlogSetView
+    urlpatterns = patterns('',
+        url(r'^$', view=ListView.as_view(model=BlogSet, queryset=BlogSet.published_objects.all()),name="mb-blog-set-list"),
+        url(r'^(?P<slug>[-\w]+)/$', view=BlogSetView.as_view(),name="mb-blog-set-detail"),
+    	url(r'^(?P<blog_set_slug>[-\w]+)/(?P<slug>[-\w]+)/$', view=BlogDetailView.as_view(), name='mb-blog-detail'),
+    	url(r'^(?P<blog_set_slug>[-\w]+)/(?P<slug>[-\w]+)/(?P<year>[\d]+)/$', view=PostYearListView.as_view(), name='mb-post-year-archive'),
+    	url(r'^(?P<blog_set_slug>[-\w]+)/(?P<blog_slug>[-\w]+)/(?P<year>[\d]+)/(?P<slug>[-\w]+)/$', view=PostDetailView.as_view(), name='mb-post-detail'),
+    )
 
-	url(r'^(?P<blog-set-slug>[-\w]+)/(?P<slug>[-\w]+)/$', 
-        view=DetailView.as_view(
-            model=Blog, 
-            queryset=Blog.objects.filter(blog_set__slug=blog-set-slug), 
-            name="mb-blog-detail"),
+else:
+    urlpatterns = patterns('',
+    	url(r'^(?P<slug>[-\w]+)/$', view=BlogDetailView.as_view(), name='mb-blog-detail'),
+    	url(r'^(?P<slug>[-\w]+)/(?P<year>[\d]+)/$', view=PostYearListView.as_view(), name='mb-post-year-archive'),
+    	url(r'^(?P<blog_slug>[-\w]+)/(?P<year>[\d]+)/(?P<slug>[-\w]+)/$', view=PostDetailView.as_view(), name='mb-post-detail'),
+    )
 
-	url(r'^(?P<blog-set-slug>[-\w]+)/(?P<slug>[-\w]+)/(?P<year>[\d]+)/$', 
-        view=ListView.as_view(
-            model=Post, 
-            queryset=Post.published_objects.filter(blog__blog_set__slug=blog-set-slug, blog__slug=slug, publish_date__year=year), 
-            name="mb-post-year-archive"),
-
-	url(r'^(?P<blog-set-slug>[-\w]+)/(?P<blog-slug>[-\w]+)/(?P<year>[\d]+)/(?P<slug>[-\w]+)/$', 
-        view=DetailView.as_view(
-            model=Post, 
-            queryset=Post.published_objects.filter(blog__blog_set__slug=blog-set-slug, blog__slug=slug, publish_date__year=year), 
-            name="mb-post-detail"),
-)
