@@ -4,7 +4,7 @@ from django.views.generic import DetailView, ListView
 
 from multiblogs.models import Blog, Post
 from multiblogs.forms import PostForm
-from multiblogs.views import BlogDetailView, PostYearListView, PostDetailView, PostCreateView
+from multiblogs.views import BlogDetailView, PostYearListView, PostDetailView, PostCreateView, PostUpdateView, PostDeleteView
 
 WITHOUT_SETS= getattr(settings, 'MULTIBLOGS_WITHOUT_SETS', False)
 if not WITHOUT_SETS: 
@@ -17,6 +17,8 @@ if not WITHOUT_SETS:
     	url(r'^(?P<blog_set_slug>[-\w]+)/(?P<slug>[-\w]+)/post/$', view=PostCreateView.as_view(), name='mb-post-create'),
     	url(r'^(?P<blog_set_slug>[-\w]+)/(?P<slug>[-\w]+)/(?P<year>[\d]+)/$', view=PostYearListView.as_view(), name='mb-post-year-archive'),
     	url(r'^(?P<blog_set_slug>[-\w]+)/(?P<blog_slug>[-\w]+)/(?P<year>[\d]+)/(?P<slug>[-\w]+)/$', view=PostDetailView.as_view(), name='mb-post-detail'),
+    	url(r'^(?P<blog_set_slug>[-\w]+)/(?P<blog_slug>[-\w]+)/(?P<year>[\d]+)/(?P<slug>[-\w]+)/edit/$', view=PostUpdateView.as_view(), name='mb-post-update'),
+    	url(r'^(?P<blog_set_slug>[-\w]+)/(?P<blog_slug>[-\w]+)/(?P<year>[\d]+)/(?P<slug>[-\w]+)/delete/$', view=PostDeleteView.as_view(), name='mb-post-delete'),
     )
 
 else:

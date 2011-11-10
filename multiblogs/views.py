@@ -1,9 +1,11 @@
 import logging
 from django.conf import settings
+from django.core.urlresolvers import reverse
+from django.utils.functional import lazy
 from django.conf.urls.defaults import *
 from django.template import loader, RequestContext
-from django.views.generic import DetailView, ListView
-from django.views.generic.edit import CreateView
+from django.views.generic import DetailView, ListView 
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
 
 from multiblogs.models import Blog, Post
 from multiblogs.forms import PostForm
@@ -59,4 +61,19 @@ class PostCreateView(CreateView):
         context = super(PostCreateView, self).get_context_data(**kwargs)
         context['blog'] = Blog.published_objects.get(slug=self.kwargs['slug'])
         return context
+
+class PostUpdateView(UpdateView):
+    form_class=PostForm
+    template_name='multiblogs/post_update.html'
+    queryset=Post.objects.all()
+
+    def get_context_data(self, **kwargs):
+        context = super(PostUpdateView, self).get_context_data(**kwargs)
+        context['blog'] = Blog.published_objects.get(slug=self.kwargs['blog_slug'])
+        return context
+
+class PostDeleteView(DeleteView):
+    model=Post
+    template_name='multiblogs/post_delete.html'
+    success_url='/blogs/' 
 
