@@ -15,6 +15,7 @@ from articles.decorators import logtime, once_per_instance
 from markup_mixin.models import MarkupMixin
 from django_extensions.db.models import TitleSlugDescriptionModel
 from django_extensions.db.fields import AutoSlugField
+from django.template.defaultfilters import slugify, striptags
 
 from multiblogs.managers import PublishedManager, PublishedPostManager
 
@@ -60,7 +61,8 @@ if not WITHOUT_SETS:
 class Blog(MarkupMixin, TitleSlugDescriptionModel):
     if not WITHOUT_SETS:
         blog_set = models.ForeignKey(BlogSet, blank=True, null=True)
-    authors = models.ManyToManyField(User)
+    authors = models.ManyToManyField(User, related_name="authors")
+    contributors=models.ManyToManyField(User, related_name="contributors", blank=True, null=True)
     published = models.BooleanField(_('Published'), default=True)
     rendered_description=models.TextField(_('Rendered description'), blank=True, null=True)
     logo = models.ImageField(_('Logo'), blank=True, null=True, upload_to='multiblogs/blogs/logos/')
@@ -139,6 +141,8 @@ class Post(ArticleBase):
         return Attachment.objects.filter(post__slug=self.slug)
 
     def save(self, *args, **kwargs):
+        self.do_unique_slug()
+
         requires_save=False
         super(Post, self).save()
 
@@ -179,6 +183,44 @@ class Post(ArticleBase):
                 found = True
 
         return found
+
+    def do_unique_slug(self):
+        """
+        Ensures that the slug is always unique for the year this article was
+        posted
+        """
+
+        if not self.id:
+            # make sure we have a slug first
+            if not len(self.slug.strip()):
+                self.slug = slugify(self.title)
+
+            self.slug = self.get_unique_slug(self.slug)
+            return True
+
+        return False
+
+    def get_unique_slug(self, slug):
+        """Iterates until a unique slug is found"""
+
+        # we need a publish date before we can do anything meaningful
+        if type(self.publish_date) is not datetime:
+            return slug
+
+        orig_slug = slug
+        year = self.publish_date.year
+        counter = 1
+
+        while True:
+            not_unique = Post.objects.all()
+            not_unique = not_unique.filter(publish_date__year=year, slug=slug)
+
+            if len(not_unique) == 0:
+                return slug
+
+            slug = '%s-%s' % (orig_slug, counter)
+            counter += 1
+
 
     def do_tags_to_keywords(self):
         """

@@ -3,7 +3,10 @@ from django.conf import settings
 from django.conf.urls.defaults import *
 from django.template import loader, RequestContext
 from django.views.generic import DetailView, ListView
+from django.views.generic.edit import CreateView
+
 from multiblogs.models import Blog, Post
+from multiblogs.forms import PostForm
 
 WITHOUT_SETS= getattr(settings, 'MULTIBLOGS_WITHOUT_SETS', False)
 
@@ -47,3 +50,13 @@ class PostDetailView(DetailView):
         else:
             queryset=Post.published_objects.all().filter(blog__slug=self.kwargs['slug'], publish_date__year=self.kwargs['year'])
         return queryset
+
+class PostCreateView(CreateView):
+    form_class=PostForm
+    template_name='multiblogs/post_create.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(PostCreateView, self).get_context_data(**kwargs)
+        context['blog'] = Blog.published_objects.get(slug=self.kwargs['slug'])
+        return context
+
