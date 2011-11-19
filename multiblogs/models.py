@@ -7,10 +7,11 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.sites.models import Site
 
 from taggit.managers import TaggableManager
 from taggit.models import Tag
-from articles.models import ArticleBase
+from articles.models import ArticleStatus
 from articles.decorators import logtime, once_per_instance
 from markup_mixin.models import MarkupMixin
 from django_extensions.db.models import TitleSlugDescriptionModel
@@ -18,6 +19,19 @@ from django_extensions.db.fields import AutoSlugField
 from django.template.defaultfilters import slugify, striptags
 
 from multiblogs.managers import PublishedManager, PublishedPostManager
+
+WORD_LIMIT=200
+MARKUP_HTML = 'h'
+MARKUP_MARKDOWN = 'm'
+MARKUP_REST = 'r'
+MARKUP_TEXTILE = 't'
+MARKUP_OPTIONS = getattr(settings, 'MULTIBLOG_MARKUP_OPTIONS', (
+        (MARKUP_HTML, _('HTML/Plain Text')),
+        (MARKUP_MARKDOWN, _('Markdown')),
+        (MARKUP_REST, _('ReStructured Text')),
+        (MARKUP_TEXTILE, _('Textile'))
+    ))
+MARKUP_DEFAULT = getattr(settings, 'MULTIBLOG_MARKUP_DEFAULT', MARKUP_HTML)
 
 log = logging.getLogger('multiblogs.models')
 
@@ -127,7 +141,234 @@ class Blog(MarkupMixin, TitleSlugDescriptionModel):
         source_field = 'description'
         rendered_field = 'rendered_description'
 
-class Post(ArticleBase):
+class PostManager(models.Manager):
+
+    def active(self):
+        """
+        Retrieves all active articles which have been published and have not
+        yet expired.
+        """
+        now = datetime.now()
+        return self.get_query_set().filter(
+                Q(expiration_date__isnull=True) |
+                Q(expiration_date__gte=now),
+                publish_date__lte=now,
+                is_active=True)
+
+    def live(self, user=None):
+        """Retrieves all live articles"""
+
+        qs = self.active()
+
+        if user is not None and user.is_superuser:
+            # superusers get to see all articles
+            return qs
+        else:
+            # only show live articles to regular users
+            return qs.filter(status__is_live=True)
+
+MARKUP_HELP = _("""Select the type of markup you are using in this post.
+<ul>
+<li><a href="http://daringfireball.net/projects/markdown/basics" target="_blank">Markdown Guide</a></li>
+<li><a href="http://docutils.sourceforge.net/docs/user/rst/quickref.html" target="_blank">ReStructured Text Guide</a></li>
+<li><a href="http://thresholdstate.com/articles/4312/the-textile-reference-manual" target="_blank">Textile Guide</a></li>
+</ul>""")
+
+
+class PostBase(models.Model):
+    title = models.CharField(max_length=100)
+    slug = models.SlugField(unique_for_year='publish_date')
+    status = models.ForeignKey(ArticleStatus, default=ArticleStatus.objects.default)
+    author = models.ForeignKey(User)
+    sites = models.ManyToManyField(Site, blank=True)
+
+    keywords = models.TextField(blank=True, help_text=_("If omitted, the keywords will be the same as the article tags."))
+    description = models.TextField(blank=True, help_text=_("If omitted, the description will be determined by the first bit of the article's content."))
+
+    markup = models.CharField(max_length=1, choices=MARKUP_OPTIONS, default=MARKUP_DEFAULT, help_text=MARKUP_HELP)
+    content = models.TextField()
+    rendered_content = models.TextField()
+
+    publish_date = models.DateTimeField(default=datetime.now, help_text=_('The date and time this article shall appear online.'))
+    expiration_date = models.DateTimeField(blank=True, null=True, help_text=_('Leave blank if the article does not expire.'))
+
+    is_active = models.BooleanField(default=True, blank=True)
+    login_required = models.BooleanField(blank=True, help_text=_('Enable this if users must login before they can read this article.'))
+
+    objects = PostManager()
+
+    def __init__(self, *args, **kwargs):
+        """Makes sure that we have some rendered content to use"""
+
+        super(PostBase, self).__init__(*args, **kwargs)
+
+        self._next = None
+        self._previous = None
+        self._teaser = None
+
+        if self.id:
+            # mark the article as inactive if it's expired and still active
+            if self.expiration_date and self.expiration_date <= datetime.now() and self.is_active:
+                self.is_active = False
+                self.save()
+
+            if not self.rendered_content or not len(self.rendered_content.strip()):
+                self.save()
+
+    def __unicode__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        """Renders the article using the appropriate markup language."""
+
+
+        self.do_render_markup()
+        self.do_meta_description()
+
+        requires_save=False
+        super(ArticleBase, self).save(*args, **kwargs)
+
+        # do some things that require an ID first
+        requires_save |= self.do_default_site(using)
+
+        if requires_save:
+            # bypass the other processing
+            super(ArticleBase, self).save()
+
+    def do_render_markup(self):
+        """Turns any markup into HTML"""
+
+        original = self.rendered_content
+        if self.markup == MARKUP_MARKDOWN:
+            self.rendered_content = markup.markdown(self.content)
+        elif self.markup == MARKUP_REST:
+            self.rendered_content = markup.restructuredtext(self.content)
+        elif self.markup == MARKUP_TEXTILE:
+            self.rendered_content = markup.textile(self.content)
+        else:
+            self.rendered_content = self.content
+
+        return (self.rendered_content != original)
+
+
+    def do_meta_description(self):
+        """
+        If meta description is empty, sets it to the article's teaser.
+
+        Returns True if an additional save is required, False otherwise.
+        """
+
+        if len(self.description.strip()) == 0:
+            self.description = self.teaser
+            return True
+
+        return False
+
+
+    def do_default_site(self):
+        """
+        If no site was selected, selects the site used to create the article
+        as the default site.
+
+        Returns True if an additional save is required, False otherwise.
+        """
+
+        if not len(self.sites.all()):
+            sites = Site.objects.all()
+            if hasattr(sites, 'using'):
+                sites = sites.using(using)
+            self.sites.add(sites.get(pk=settings.SITE_ID))
+            return True
+
+        return False
+
+
+    def _get_article_links(self):
+        """
+        Find all links in this article.  When a link is encountered in the
+        article text, this will attempt to discover the title of the page it
+        links to.  If there is a problem with the target page, or there is no
+        title (ie it's an image or other binary file), the text of the link is
+        used as the title.  Once a title is determined, it is cached for a week
+        before it will be requested again.
+        """
+
+        links = []
+
+        # find all links in the article
+        log.debug('Locating links in article: %s' % (self,))
+        for link in LINK_RE.finditer(self.rendered_content):
+            url = link.group(1)
+            log.debug('Do we have a title for "%s"?' % (url,))
+            key = 'href_title_' + sha1(url).hexdigest()
+
+            # look in the cache for the link target's title
+            title = cache.get(key)
+            if title is None:
+                log.debug('Nope... Getting it and caching it.')
+                title = link.group(2)
+
+                if LOOKUP_LINK_TITLE:
+                    try:
+                        log.debug('Looking up title for URL: %s' % (url,))
+                        # open the URL
+                        c = urllib.urlopen(url)
+                        html = c.read()
+                        c.close()
+
+                        # try to determine the title of the target
+                        title_m = TITLE_RE.search(html)
+                        if title_m:
+                            title = title_m.group(1)
+                            log.debug('Found title: %s' % (title,))
+                    except:
+                        # if anything goes wrong (ie IOError), use the link's text
+                        log.warn('Failed to retrieve the title for "%s"; using link text "%s"' % (url, title))
+
+                # cache the page title for a week
+                log.debug('Using "%s" as title for "%s"' % (title, url))
+                cache.set(key, title, 604800)
+
+            # add it to the list of links and titles
+            if url not in (l[0] for l in links):
+                links.append((url, title))
+
+        return tuple(links)
+    links = property(_get_article_links)
+
+    def _get_word_count(self):
+        """Stupid word counter for an article."""
+
+        return len(striptags(self.rendered_content).split(' '))
+    word_count = property(_get_word_count)
+
+    @models.permalink
+    def get_absolute_url(self):
+        return ('articles_display_article', (self.publish_date.year, self.slug))
+
+    def _get_teaser(self):
+        """
+        Retrieve some part of the article or the article's description.
+        """
+        if not self._teaser:
+            if len(self.description.strip()):
+                text = self.description
+            else:
+                text = self.rendered_content
+
+            words = text.split(' ')
+            if len(words) > WORD_LIMIT:
+                text = '%s...' % ' '.join(words[:WORD_LIMIT])
+            self._teaser = text
+
+        return self._teaser
+    teaser = property(_get_teaser)
+
+
+    class Meta:
+        abstract=True
+
+class Post(PostBase):
     blog = models.ForeignKey(Blog)
     tags = TaggableManager()
     auto_tag = models.BooleanField(default=AUTO_TAG, blank=True, help_text=_('Check this if you want to automatically assign any existing tags to this post based on its content.'))
