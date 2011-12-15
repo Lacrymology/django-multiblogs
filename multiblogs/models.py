@@ -226,14 +226,14 @@ class PostBase(models.Model):
         self.do_meta_description()
 
         requires_save=False
-        super(ArticleBase, self).save(*args, **kwargs)
+        super(PostBase, self).save(*args, **kwargs)
 
         # do some things that require an ID first
         requires_save |= self.do_default_site(using)
 
         if requires_save:
             # bypass the other processing
-            super(ArticleBase, self).save()
+            super(PostBase, self).save()
 
     def do_render_markup(self):
         """Turns any markup into HTML"""
