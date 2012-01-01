@@ -40,6 +40,7 @@ Contents
 
  changelog
  installation
+ templates
  templatetags
  signals
  usage
