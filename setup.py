@@ -26,7 +26,7 @@ standard_exclude_directories = [
 # that package is installed yet.
 def find_package_data(
     where=".",
-    package="",
+    package="multiblogs",
     exclude=standard_exclude,
     exclude_directories=standard_exclude_directories,
     only_in_packages=True,
@@ -103,7 +103,7 @@ def find_package_data(
     return out
 
 
-PACKAGE = "django-multiblogs"
+PACKAGE = "multiblogs"
 NAME = "django-multiblogs"
 DESCRIPTION = 'An application for managing multiple blogs, and even *gasp* blog "sets".'
 AUTHOR = "Colin Powell"
@@ -116,7 +116,7 @@ setup(
     name=NAME,
     version=VERSION,
     description=DESCRIPTION,
-    long_description=read("README.rst"),
+    long_description=read("README.md"),
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,
     license="BSD",
