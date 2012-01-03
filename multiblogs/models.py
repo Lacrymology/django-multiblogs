@@ -271,18 +271,19 @@ class PostBase(models.Model):
         return False
 
 
-    def do_default_site(self):
+    def do_default_site(self, using=None):
         """
         If no site was selected, selects the site used to create the article
         as the default site.
 
         Returns True if an additional save is required, False otherwise.
         """
-
+        if using is None:
+            using = self.__class__.objects.db
         if not len(self.sites.all()):
             sites = Site.objects.all()
             if hasattr(sites, 'using'):
-                sites = sites.using(self.__class__.objects.db)
+                sites = sites.using(using)
             self.sites.add(sites.get(pk=settings.SITE_ID))
             return True
 
