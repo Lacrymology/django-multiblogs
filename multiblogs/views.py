@@ -50,7 +50,10 @@ class PostDetailView(DetailView):
         if not WITHOUT_SETS:
             queryset=Post.published_objects.all().filter(blog__blog_set__slug=self.kwargs['blog_set_slug'], blog__slug=self.kwargs['blog_slug'], publish_date__year=self.kwargs['year'])
         else:
-            queryset=Post.published_objects.all().filter(blog__slug=self.kwargs['slug'], publish_date__year=self.kwargs['year'])
+            queryset=Post.published_objects.all().filter(
+                blog__slug=self.kwargs['blog_slug'],
+                publish_date__year=self.kwargs['year'],
+                slug=self.kwargs['slug'])
         return queryset
 
 class PostCreateView(CreateView):
