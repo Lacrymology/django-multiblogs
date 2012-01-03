@@ -1,8 +1,11 @@
+from django.conf import settings
 from django import template
 from django.core.cache import cache
 from django.contrib.contenttypes.models import ContentType
-from classroom.models import Staff, School
 
+from multiblogs.models import Post
+
+WITHOUT_SETS= getattr(settings, 'MULTIBLOGS_WITHOUT_SETS', False)
 register = template.Library()
 
 class GetStaffNode(template.Node):
@@ -38,71 +41,21 @@ def get_active_staff(parser, token):
 
     return GetStaffNode(varname=varname)
 
-class GetPrincipalNode(template.Node):
-    """
-    Retrieves a list of active principals
-    """
-    def __init__(self, varname):
-        self.varname = varname
-
-    def render(self, context):
-        school = School.objects.get(primary=True)
-
-        context[self.varname] = school.principal
-        return ''
-
-def get_active_principal(parser, token):
-    """
-    Retrieves a list of active principals
-
-    {% get_active_principal as principal %}
-    """
-    args = token.split_contents()
-    argc = len(args)
-
-    try:
-        assert argc == 3 and args[1] == 'as' 
-    except AssertionError:
-        raise template.TemplateSyntaxError('get_active_principal syntax: {% get_active_principal as varname %}')
-
-    count = varname = None
-    if argc == 3: t, a, varname = args
-    elif argc == 4: t, count, a, varname = args
-
-    return GetPrincipalNode(varname=varname)
-
-class GetSchoolNode(template.Node):
-    """
-    Retrieves the currently primary school
-    """
-    def __init__(self, varname):
-        self.varname = varname
-
-    def render(self, context):
-        school = School.objects.get(primary=True)
-
-        context[self.varname] = school
-        return ''
-
-def get_primary_school(parser, token):
-    """
-    Retrieves the currently primary school
-
-    {% get_primary_school as school %}
-    """
-    args = token.split_contents()
-    argc = len(args)
-
-    try:
-        assert argc == 3 and args[1] == 'as' 
-    except AssertionError:
-        raise template.TemplateSyntaxError('get_primary_school syntax: {% get_primary_school as varname %}')
-
-    varname = None
-    t, a, varname = args
-
-    return GetSchoolNode(varname=varname)
-
-register.tag(get_primary_school)
 register.tag(get_active_staff)
-register.tag(get_active_principal)
+
+if not WITHOUT_SETS:
+    def latest_entries(blog_set, blog, count=3):
+        """
+        Renders the latest `count` entries from `blog`
+        """
+        queryset=Post.published_objects.all().filter(
+            blog__blog_set__slug=blog_set,
+            blog__slug=blog).order_by('publish_date')[:count]
+        return { 'entries': queryset }
+else:
+    def latest_entries(blog, count=3):
+        queryset=(Post.published_objects.all().filter(blog__slug=blog)
+                  .order_by('publish_date')[:count])
+        return { 'entries': queryset }
+
+register.inclusion_tag('multiblogs/latest_entries.html')(latest_entries)
