@@ -41,6 +41,9 @@ log = logging.getLogger('multiblogs.models')
 WITHOUT_SETS= getattr(settings, 'MULTIBLOGS_WITHOUT_SETS', False)
 AUTO_TAG = getattr(settings, 'MULTIBLOGS_AUTO_TAG', True)
 
+HIDE_SLUGS = getattr(settings, 'MULTIBLOGS_HIDE_SLUGS', True)
+OVERWRITE_SLUGS = getattr(settings, 'MULTIBLOGS_OVERRIDE_SLUGS', False)
+
 if not WITHOUT_SETS:
     class BlogSet(MarkupMixin, TitleSlugDescriptionModel):
         published = models.BooleanField(_('Published'), default=True)
@@ -140,6 +143,9 @@ class Blog(MarkupMixin, TitleSlugDescriptionModel):
     class MarkupOptions:
         source_field = 'description'
         rendered_field = 'rendered_description'
+
+Blog._meta.get_field('slug').overwrite = OVERWRITE_SLUGS
+Blog._meta.get_field('slug').editable = (not HIDE_SLUGS)
 
 class PostManager(models.Manager):
 
