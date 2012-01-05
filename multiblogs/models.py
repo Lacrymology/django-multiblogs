@@ -40,6 +40,9 @@ log = logging.getLogger('multiblogs.models')
 WITHOUT_SETS= getattr(settings, 'MULTIBLOGS_WITHOUT_SETS', False)
 AUTO_TAG = getattr(settings, 'MULTIBLOGS_AUTO_TAG', True)
 
+HIDE_SLUGS = getattr(settings, 'MULTIBLOGS_HIDE_SLUGS', True)
+OVERWRITE_SLUGS = getattr(settings, 'MULTIBLOGS_OVERRIDE_SLUGS', False)
+
 if not WITHOUT_SETS:
     class BlogSet(MarkupMixin, TitleSlugDescriptionModel):
         published = models.BooleanField(_('Published'), default=True)
@@ -139,6 +142,9 @@ class Blog(MarkupMixin, TitleSlugDescriptionModel):
     class MarkupOptions:
         source_field = 'description'
         rendered_field = 'rendered_description'
+
+Blog._meta.get_field('slug').overwrite = OVERWRITE_SLUGS
+Blog._meta.get_field('slug').editable = (not HIDE_SLUGS)
 
 class PostManager(models.Manager):
 
@@ -255,7 +261,7 @@ class PostBase(models.Model):
         super(PostBase, self).save(*args, **kwargs)
 
         # do some things that require an ID first
-        requires_save |= self.do_default_site()
+        requires_save |= self.do_default_site(self.__class__.objects.db)
 
         if requires_save:
             # bypass the other processing
@@ -291,14 +297,15 @@ class PostBase(models.Model):
         return False
 
 
-    def do_default_site(self ):
+    def do_default_site(self, using=None):
         """
         If no site was selected, selects the site used to create the article
         as the default site.
 
         Returns True if an additional save is required, False otherwise.
         """
-
+        if using is None:
+            using = self.__class__.objects.db
         if not len(self.sites.all()):
             sites = Site.objects.all()
             self.sites.add(sites.get(pk=settings.SITE_ID))

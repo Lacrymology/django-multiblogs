@@ -38,6 +38,7 @@ Currently there is little to configure. The important part is to wire it up in y
 ```
 INSTALLED_APPS = (
     ...
+    'articles',
     'multiblogs',
     ...
 )
@@ -76,4 +77,23 @@ post_year_archive.html (/<blog-set-slug>/<blog-slug>/<YYYY?year>/)
 post_detail.html (/<blog-set-slug>/<blog-slug>/<YYYY?year>/<slug>/)
 ```
 
+OPTIONAL SETTINGS
+-----------------
 
+```MULTIBLOGS_MARKUP_DEFAULT``` sets up the default markup option for blogs and posts. Options are:
+'h' for HTML/Plain Text,
+'m' for Markdown
+'r' for ReStructured Text and
+'t' for Textile
+(m, r and t require the corresponding python module).
+
+If this option is not set, it defaults to another option: ```MARKUP_DEFAULT```,
+which is actually an option for django-markup-mixin which is one of the
+requirements of this app. For now, using MARKUP_DEFAULT is recommended, since I
+still couldn't get MULTIBLOGS_MARKUP_DEFAULT to affect the blogs' defaults
+
+```MULTIBLOGS_AUTO_TAG``` defines the default option for the auto-tag setting on posts. Defaults to True
+
+```MULTIBLOG_HIDE_SLUGS``` defines whether the blog slugs should be visible and editable from the admin. Defaults to True
+
+```MULTIBLOG_OVERRIDE_SLUGS``` defines whether the blog slugs should be overwritten on every save (in case the title changed). Defaults to False
