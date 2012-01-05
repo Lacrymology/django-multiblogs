@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.contenttypes import generic
-from articles.models import ArticleStatus
+from multiblogs.models import PostStatus
 from taggit.models import Tag
 from django.utils.translation import ugettext_lazy as _
 
@@ -82,7 +82,7 @@ class PostAdmin(admin.ModelAdmin):
                     article.save()
 
             status_func.__name__ = name
-            status_func.short_description = _('Apply tag "%s" to selected articles' % tag)
+            status_func.short_description = _('Apply tag "%s" to selected post' % tag)
             return status_func
 
         for tag in Tag.objects.all():
@@ -108,7 +108,7 @@ class PostAdmin(admin.ModelAdmin):
         form.cleaned_data['tags'] += list(obj.tags.all())
 
     def queryset(self, request):
-        """Limit the list of articles to article posted by this user unless they're a superuser"""
+        """Limit the list of posts to post posted by this user unless they're a superuser"""
 
         if request.user.is_superuser:
             return self.model._default_manager.all()
