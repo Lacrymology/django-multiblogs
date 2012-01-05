@@ -229,7 +229,7 @@ class PostBase(models.Model):
         super(PostBase, self).save(*args, **kwargs)
 
         # do some things that require an ID first
-        requires_save |= self.do_default_site(using)
+        requires_save |= self.do_default_site()
 
         if requires_save:
             # bypass the other processing
@@ -265,7 +265,7 @@ class PostBase(models.Model):
         return False
 
 
-    def do_default_site(self):
+    def do_default_site(self ):
         """
         If no site was selected, selects the site used to create the article
         as the default site.
@@ -275,8 +275,6 @@ class PostBase(models.Model):
 
         if not len(self.sites.all()):
             sites = Site.objects.all()
-            if hasattr(sites, 'using'):
-                sites = sites.using(using)
             self.sites.add(sites.get(pk=settings.SITE_ID))
             return True
 
