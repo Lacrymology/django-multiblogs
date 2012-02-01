@@ -50,12 +50,12 @@ if not WITHOUT_SETS:
         """
         queryset=Post.published_objects.all().filter(
             blog__blog_set__slug=blog_set,
-            blog__slug=blog).order_by('publish_date')[:count]
+            blog__slug=blog).order_by('-publish_date')[:count]
         return { 'entries': queryset }
 else:
     def latest_entries(blog, count=3):
         queryset=(Post.published_objects.all().filter(blog__slug=blog)
-                  .order_by('publish_date')[:count])
+                  .order_by('-publish_date')[:count])
         return { 'entries': queryset }
 
 register.inclusion_tag('multiblogs/latest_entries.html')(latest_entries)
