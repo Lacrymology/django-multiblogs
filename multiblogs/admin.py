@@ -53,11 +53,11 @@ class PostAdmin(admin.ModelAdmin):
 
     def mark_active(self, request, queryset):
         queryset.update(is_active=True)
-    mark_active.short_description = _('Mark select posts as active')
+    mark_active.short_description = _('Mark selected posts as active')
 
     def mark_inactive(self, request, queryset):
         queryset.update(is_active=False)
-    mark_inactive.short_description = _('Mark select posts as inactive')
+    mark_inactive.short_description = _('Mark selected posts as inactive')
 
     def get_actions(self, request):
         actions = super(PostAdmin, self).get_actions(request)
