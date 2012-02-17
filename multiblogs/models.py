@@ -11,8 +11,7 @@ from django.contrib.sites.models import Site
 
 from taggit.managers import TaggableManager
 from taggit.models import Tag
-from articles.models import ArticleStatus
-from articles.decorators import logtime, once_per_instance
+from multiblogs.decorators import logtime, once_per_instance
 from markup_mixin.models import MarkupMixin
 from django_extensions.db.models import TitleSlugDescriptionModel
 from django_extensions.db.fields import AutoSlugField
@@ -173,6 +172,33 @@ class PostManager(models.Manager):
             # only show live articles to regular users
             return qs.filter(status__is_live=True)
 
+class PostStatusManager(models.Manager):
+
+    def default(self):
+        default = self.all()[:1]
+
+        if len(default) == 0:
+            return None
+        else:
+            return default[0]
+
+class PostStatus(models.Model):
+    name = models.CharField(max_length=50)
+    ordering = models.IntegerField(default=0)
+    is_live = models.BooleanField(default=False, blank=True)
+
+    objects = PostStatusManager()
+
+    class Meta:
+        ordering = ('ordering', 'name')
+        verbose_name_plural = _('Post statuses')
+
+    def __unicode__(self):
+        if self.is_live:
+            return u'%s (live)' % self.name
+        else:
+            return self.name
+
 MARKUP_HELP = _("""Select the type of markup you are using in this post.
 <ul>
 <li><a href="http://daringfireball.net/projects/markdown/basics" target="_blank">Markdown Guide</a></li>
@@ -184,7 +210,7 @@ MARKUP_HELP = _("""Select the type of markup you are using in this post.
 class PostBase(models.Model):
     title = models.CharField(max_length=100)
     slug = models.SlugField(unique_for_year='publish_date')
-    status = models.ForeignKey(ArticleStatus, default=ArticleStatus.objects.default)
+    status = models.ForeignKey(PostStatus, default=PostStatus.objects.default)
     author = models.ForeignKey(User)
     sites = models.ManyToManyField(Site, blank=True)
 
@@ -282,8 +308,6 @@ class PostBase(models.Model):
             using = self.__class__.objects.db
         if not len(self.sites.all()):
             sites = Site.objects.all()
-            if hasattr(sites, 'using'):
-                sites = sites.using(using)
             self.sites.add(sites.get(pk=settings.SITE_ID))
             return True
 
