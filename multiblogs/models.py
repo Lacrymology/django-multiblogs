@@ -296,8 +296,6 @@ class PostBase(models.Model):
 
     def save(self, *args, **kwargs):
         """Renders the article using the appropriate markup language."""
-
-
         self.do_render_markup()
         self.do_meta_description()
 
@@ -445,8 +443,15 @@ class PostBase(models.Model):
     class Meta:
         abstract=True
 
+LANGUAGE_CHOICES = getattr(settings, 'LANGUAGES', 
+                           (('en', _("English"),)))
+
 class Post(PostBase):
     blog = models.ForeignKey(Blog)
+    language = models.CharField(max_length=8, choices=LANGUAGE_CHOICES,
+                                help_text=_("Language for this post. if left "
+                                            "blank, the post'll show in all "
+                                            "languages."))
     tags = TaggableManager()
     auto_tag = models.BooleanField(default=AUTO_TAG, blank=True,
                                    help_text=_('Check this if you want to '

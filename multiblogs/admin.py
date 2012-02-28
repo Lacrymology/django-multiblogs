@@ -32,8 +32,8 @@ class PostAdmin(admin.ModelAdmin):
     ]
 
     fieldsets = (
-        (None, {'fields': ('title', 'blog', 'author', 'content', 'tags',
-                           'auto_tag', 'markup', 'status')}),
+        (None, {'fields': ('title', 'blog', 'language', 'author', 'content',
+                           'tags', 'auto_tag', 'markup', 'status')}),
         ('Metadata', {
             'fields': ('keywords', 'description',),
             'classes': ('collapse',)
