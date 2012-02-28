@@ -1,0 +1,1 @@
+[{"pk": 1, "model": "multiblogs.poststatus", "fields": {"ordering": 0, "is_live": false, "name": "draft"}}, {"pk": 2, "model": "multiblogs.poststatus", "fields": {"ordering": 1, "is_live": true, "name": "published"}}]

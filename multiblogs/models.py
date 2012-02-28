@@ -210,8 +210,7 @@ MARKUP_HELP = _("""Select the type of markup you are using in this post.
 class PostBase(models.Model):
     title = models.CharField(max_length=100)
     slug = models.SlugField(unique_for_year='publish_date')
-    status = models.ForeignKey(PostStatus, default=PostStatus.objects.default,
-                               null=True)
+    status = models.ForeignKey(PostStatus, default=PostStatus.objects.default)
     author = models.ForeignKey(User)
     sites = models.ManyToManyField(Site, blank=True)
 
