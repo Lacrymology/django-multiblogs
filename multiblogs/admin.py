@@ -32,7 +32,8 @@ class PostAdmin(admin.ModelAdmin):
     ]
 
     fieldsets = (
-        (None, {'fields': ('title', 'blog', 'author', 'content', 'tags', 'auto_tag', 'markup', 'status')}),
+        (None, {'fields': ('title', 'blog', 'author', 'content', 'tags',
+                           'auto_tag', 'markup', 'status')}),
         ('Metadata', {
             'fields': ('keywords', 'description',),
             'classes': ('collapse',)
@@ -61,40 +62,47 @@ class PostAdmin(admin.ModelAdmin):
 
     def get_actions(self, request):
         actions = super(PostAdmin, self).get_actions(request)
-
         def dynamic_status(name, status):
             def status_func(self, request, queryset):
                 queryset.update(status=status)
 
             status_func.__name__ = name
-            status_func.short_description = _('Set status of selected to "%s"' % status)
+            status_func.short_description = _('Set status of selected to "%s"'
+                                              % status)
             return status_func
 
-        for status in ArticleStatus.objects.all():
+        for status in PostStatus.objects.all():
             name = 'mark_status_%i' % status.id
-            actions[name] = (dynamic_status(name, status), name, _('Set status of selected to "%s"' % status))
+            actions[name] = (dynamic_status(name, status), name,
+                             _('Set status of selected to "%s"' % status))
 
         def dynamic_tag(name, tag):
             def status_func(self, request, queryset):
                 for article in queryset.iterator():
-                    log.debug('Dynamic tagging: applying Tag "%s" to Article "%s"' % (tag, article))
+                    log.debug('Dynamic tagging: applying Tag "%s" to Article '
+                              '"%s"' % (tag, article))
                     article.tags.add(tag)
                     article.save()
 
             status_func.__name__ = name
-            status_func.short_description = _('Apply tag "%s" to selected post' % tag)
+            status_func.short_description = _('Apply tag "%s" to selected post'
+                                              % tag)
             return status_func
 
         for tag in Tag.objects.all():
             name = 'apply_tag_%s' % tag.pk
-            actions[name] = (dynamic_tag(name, tag), name, _('Apply Tag: %s' % (tag.slug,)))
+            actions[name] = (dynamic_tag(name, tag), name, _('Apply Tag: %s'
+                                                             % (tag.slug,)))
 
         return actions
 
     actions = [mark_active, mark_inactive]
 
     def save_model(self, request, obj, form, change):
-        """Set the article's author based on the logged in user and make sure at least one site is selected"""
+        """
+        Set the article's author based on the logged in user and make sure
+        at least one site is selected
+        """
 
         try:
             author = obj.author
@@ -108,8 +116,10 @@ class PostAdmin(admin.ModelAdmin):
         form.cleaned_data['tags'] += list(obj.tags.all())
 
     def queryset(self, request):
-        """Limit the list of posts to post posted by this user unless they're a superuser"""
-
+        """
+        Limit the list of posts to post posted by this user unless they're a
+        superuser
+        """
         if request.user.is_superuser:
             return self.model._default_manager.all()
         else:
@@ -117,3 +127,4 @@ class PostAdmin(admin.ModelAdmin):
 
 admin.site.register(Blog)
 admin.site.register(Post, PostAdmin)
+admin.site.register(PostStatus)
