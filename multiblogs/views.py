@@ -15,50 +15,60 @@ WITHOUT_SETS= getattr(settings, 'MULTIBLOGS_WITHOUT_SETS', False)
 if not WITHOUT_SETS:
     from multiblogs.models import BlogSet
     class BlogSetView(DetailView):
-        model=BlogSet
-        queryset=BlogSet.published_objects.all()
+        model = BlogSet
+        queryset = BlogSet.published_objects.all()
         template_name_field = 'template_name'
     
 
 class BlogDetailView(DetailView):
-    model=Blog
+    model = Blog
     template_name_field = 'template_name'
 
     def get_queryset(self):
         if not WITHOUT_SETS:
-            queryset=Blog.published_objects.filter(blog_set__slug=self.kwargs['blog_set_slug'])
+            queryset = Blog.published_objects.filter(
+                blog_set__slug=self.kwargs['blog_set_slug'])
         else:
-            queryset=Blog.published_objects.all()
+            queryset = Blog.published_objects.all()
         return queryset
 
 class PostYearListView(ListView):
-    model=Post
+    model = Post
     template_name_field = 'blog__template_name'
 
     def get_queryset(self):
         if not WITHOUT_SETS:
-            queryset=Post.published_objects.all().filter(blog__blog_set__slug=self.kwargs['blog_set_slug'], blog__slug=self.kwargs['blog_slug'], publish_date__year=self.kwargs['year'])
+            queryset = (Post.published_objects.all()
+                        .filter(
+                    blog__blog_set__slug=self.kwargs['blog_set_slug'],
+                    blog__slug=self.kwargs['blog_slug'],
+                    publish_date__year=self.kwargs['year']))
         else:
-            queryset=Post.published_objects.all().filter(blog__slug=self.kwargs['slug'], publish_date__year=self.kwargs['year'])
+            queryset = Post.published_objects.all().filter(
+                blog__slug=self.kwargs['slug'],
+                publish_date__year=self.kwargs['year'])
         return queryset
 
 class PostDetailView(DetailView):
-    model=Post
+    model = Post
     template_name_field = 'blog__template_name'
 
     def get_queryset(self):
         if not WITHOUT_SETS:
-            queryset=Post.published_objects.all().filter(blog__blog_set__slug=self.kwargs['blog_set_slug'], blog__slug=self.kwargs['blog_slug'], publish_date__year=self.kwargs['year'])
+            queryset = Post.published_objects.all().filter(
+                blog__blog_set__slug=self.kwargs['blog_set_slug'],
+                blog__slug=self.kwargs['blog_slug'],
+                publish_date__year=self.kwargs['year'])
         else:
-            queryset=Post.published_objects.all().filter(
+            queryset = Post.published_objects.all().filter(
                 blog__slug=self.kwargs['blog_slug'],
                 publish_date__year=self.kwargs['year'],
                 slug=self.kwargs['slug'])
         return queryset
 
 class PostCreateView(CreateView):
-    form_class=PostForm
-    template_name='multiblogs/post_create.html'
+    form_class = PostForm
+    template_name = 'multiblogs/post_create.html'
 
     def get_context_data(self, **kwargs):
         context = super(PostCreateView, self).get_context_data(**kwargs)
@@ -66,17 +76,18 @@ class PostCreateView(CreateView):
         return context
 
 class PostUpdateView(UpdateView):
-    form_class=PostForm
-    template_name='multiblogs/post_update.html'
-    queryset=Post.objects.all()
+    form_class = PostForm
+    template_name = 'multiblogs/post_update.html'
+    queryset = Post.objects.all()
 
     def get_context_data(self, **kwargs):
         context = super(PostUpdateView, self).get_context_data(**kwargs)
-        context['blog'] = Blog.published_objects.get(slug=self.kwargs['blog_slug'])
+        context['blog'] = Blog.published_objects.get(
+            slug=self.kwargs['blog_slug'])
         return context
 
 class PostDeleteView(DeleteView):
-    model=Post
-    template_name='multiblogs/post_delete.html'
-    success_url='/blogs/' 
+    model = Post
+    template_name = 'multiblogs/post_delete.html'
+    success_url = '/blogs/' 
 
