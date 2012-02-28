@@ -46,22 +46,31 @@ OVERWRITE_SLUGS = getattr(settings, 'MULTIBLOGS_OVERRIDE_SLUGS', False)
 if not WITHOUT_SETS:
     class BlogSet(MarkupMixin, TitleSlugDescriptionModel):
         published = models.BooleanField(_('Published'), default=True)
-        rendered_description=models.TextField(_('Rendered description'), blank=True, null=True)
-        logo = models.ImageField(_('Logo'), blank=True, null=True, upload_to='multiblogs/blog_sets/logos/')
-        template_name = models.CharField(_('template name'), max_length=255, blank=True, help_text=_("Example: 'multiblogs/blog_sets/art-class.html'. If this isn't provided, the system will use 'multiblogs/blog_set_detail.html'."))
+        rendered_description=models.TextField(_('Rendered description'),
+                                              blank=True, null=True)
+        logo = models.ImageField(_('Logo'), blank=True, null=True,
+                                 upload_to='multiblogs/blog_sets/logos/')
+        template_name = models.CharField(
+            _('template name'), max_length=255, blank=True,
+            help_text=_("Example: 'multiblogs/blog_sets/art-class.html'. If "
+                        "this isn't provided, the system will use "
+                        "'multiblogs/blog_set_detail.html'."))
 
         objects = models.Manager()
         published_objects = PublishedManager()
     
         def get_blogs(self, live=True, order_by='title'):
             '''
-            Get all the blogs in this set that are live and orderd by their titles.
+            Get all the blogs in this set that are live and orderd by their
+            titles.
     
-            Parameters include whether blogs should be live, and an ordering expression.
+            Parameters include whether blogs should be live, and an ordering
+            expression.
     
             Order can be any sortable field on the Blog model.
             '''
-            return Blog.objects.filter(blog_set__slug=self.slug, published=live).order_by(order_by)
+            return Blog.objects.filter(blog_set__slug=self.slug,
+                                       published=live).order_by(order_by)
     
         def __unicode__(self):
             return self.title
@@ -78,21 +87,34 @@ class Blog(MarkupMixin, TitleSlugDescriptionModel):
     if not WITHOUT_SETS:
         blog_set = models.ForeignKey(BlogSet, blank=True, null=True)
     authors = models.ManyToManyField(User, related_name="authors")
-    contributors=models.ManyToManyField(User, related_name="contributors", blank=True, null=True)
+    contributors=models.ManyToManyField(User, related_name="contributors",
+                                        blank=True, null=True)
     published = models.BooleanField(_('Published'), default=True)
-    rendered_description=models.TextField(_('Rendered description'), blank=True, null=True)
-    logo = models.ImageField(_('Logo'), blank=True, null=True, upload_to='multiblogs/blogs/logos/')
-    at_most = models.IntegerField('Show at most', default=5, help_text='Number of posts to show for this blog.')
-    date_format = models.CharField('date format', max_length=30, default='F j, Y', help_text='Date format for this blog.')
-    time_format = models.CharField('time format', max_length=30, default='g:i A', help_text='Time format for this blog.')
-    template_name = models.CharField(_('template name'), max_length=255, blank=True, help_text=_("Example: 'multiblogs/blogs/whales-galore.html'. If this isn't provided, the system will use 'multiblogs/blog_detail.html'."))
+    rendered_description=models.TextField(_('Rendered description'), blank=True,
+                                          null=True)
+    logo = models.ImageField(_('Logo'), blank=True, null=True,
+                             upload_to='multiblogs/blogs/logos/')
+    at_most = models.IntegerField('Show at most', default=5,
+                                  help_text=_('Number of posts to show for '
+                                              'this blog.'))
+    date_format = models.CharField('date format', max_length=30,
+                                   default='F j, Y',
+                                   help_text='Date format for this blog.')
+    time_format = models.CharField('time format', max_length=30,
+                                   default='g:i A',
+                                   help_text='Time format for this blog.')
+    template_name = models.CharField(_('template name'), max_length=255,
+                                     blank=True, help_text=_(
+            "Example: 'multiblogs/blogs/whales-galore.html'. If this isn't "
+            "provided, the system will use 'multiblogs/blog_detail.html'."))
 
     objects = models.Manager()
     published_objects = PublishedManager()
 
     def get_authors(self):
         '''
-        Returns a string with each author's either full name or username, depending on what's available.
+        Returns a string with each author's either full name or username,
+        depending on what's available.
         '''
         authors = []
         for a in self.authors.all():
@@ -104,26 +126,31 @@ class Blog(MarkupMixin, TitleSlugDescriptionModel):
         # Cannot find user, return byline
         return ", ".join(authors)
 
-    def get_posts(self, start=None, drafts=False, order_by='-publish_date', at_most=10):
+    def get_posts(self, start=None, drafts=False, order_by='-publish_date',
+                  at_most=10):
         '''
         Get all the published posts in a blog.
         
         Parameters:
             start -- starting index for result set
-            drafts -- True to return only drafts, False to return only published posts
+            drafts -- True to return only drafts, False to return only
+                      published posts
             order_by -- expression specifying the order of the result set
 
         '''
-        posts = Post.objects.filter(blog__slug=self.slug, publish_date__isnull=drafts)
+        posts = Post.objects.filter(blog__slug=self.slug,
+                                    publish_date__isnull=drafts)
         if start:
             posts = posts.filter(publish_date__gte=start)
         return posts.order_by(order_by)[:at_most]
 
     def get_post_count(self, drafts=False):
         '''
-        Count all posts, published by default, but you can ask it to count all posts.
+        Count all posts, published by default, but you can ask it to count all
+        posts.
         '''
-        return Post.objects.filter(blog__slug=self.slug, publish_date__isnull=drafts).count()
+        return Post.objects.filter(blog__slug=self.slug,
+                                   publish_date__isnull=drafts).count()
 
     def __unicode__(self):
         return self.title
@@ -214,18 +241,32 @@ class PostBase(models.Model):
     author = models.ForeignKey(User)
     sites = models.ManyToManyField(Site, blank=True)
 
-    keywords = models.TextField(blank=True, help_text=_("If omitted, the keywords will be the same as the article tags."))
-    description = models.TextField(blank=True, help_text=_("If omitted, the description will be determined by the first bit of the article's content."))
+    keywords = models.TextField(blank=True,
+                                help_text=_("If omitted, the keywords will be "
+                                            "the same as the article tags."))
+    description = models.TextField(blank=True,
+                                   help_text=_("If omitted, the description "
+                                               "will be determined by the "
+                                               "first bit of the article's "
+                                               "content."))
 
-    markup = models.CharField(max_length=1, choices=MARKUP_OPTIONS, default=MARKUP_DEFAULT, help_text=MARKUP_HELP)
+    markup = models.CharField(max_length=1, choices=MARKUP_OPTIONS,
+                              default=MARKUP_DEFAULT, help_text=MARKUP_HELP)
     content = models.TextField()
     rendered_content = models.TextField()
 
-    publish_date = models.DateTimeField(default=datetime.now, help_text=_('The date and time this article shall appear online.'))
-    expiration_date = models.DateTimeField(blank=True, null=True, help_text=_('Leave blank if the article does not expire.'))
+    publish_date = models.DateTimeField(
+        default=datetime.now,
+        help_text=_('The date and time this article shall appear online.'))
+    expiration_date = models.DateTimeField(
+        blank=True, null=True,
+        help_text=_('Leave blank if the article does not expire.'))
 
     is_active = models.BooleanField(default=True, blank=True)
-    login_required = models.BooleanField(blank=True, help_text=_('Enable this if users must login before they can read this article.'))
+    login_required = models.BooleanField(blank=True,
+                                         help_text=_('Enable this if users '
+                                                     'must login before they '
+                                                     'can read this article.'))
 
     objects = PostManager()
 
@@ -240,11 +281,14 @@ class PostBase(models.Model):
 
         if self.id:
             # mark the article as inactive if it's expired and still active
-            if self.expiration_date and self.expiration_date <= datetime.now() and self.is_active:
+            if (self.expiration_date and
+                self.expiration_date <= datetime.now()
+                and self.is_active):
                 self.is_active = False
                 self.save()
 
-            if not self.rendered_content or not len(self.rendered_content.strip()):
+            if (not self.rendered_content or
+                not len(self.rendered_content.strip())):
                 self.save()
 
     def __unicode__(self):
@@ -353,8 +397,10 @@ class PostBase(models.Model):
                             title = title_m.group(1)
                             log.debug('Found title: %s' % (title,))
                     except:
-                        # if anything goes wrong (ie IOError), use the link's text
-                        log.warn('Failed to retrieve the title for "%s"; using link text "%s"' % (url, title))
+                        # if anything goes wrong (ie IOError), use the link's
+                        #text
+                        log.warn('Failed to retrieve the title for "%s"; using '
+                                 'link text "%s"' % (url, title))
 
                 # cache the page title for a week
                 log.debug('Using "%s" as title for "%s"' % (title, url))
@@ -402,8 +448,17 @@ class PostBase(models.Model):
 class Post(PostBase):
     blog = models.ForeignKey(Blog)
     tags = TaggableManager()
-    auto_tag = models.BooleanField(default=AUTO_TAG, blank=True, help_text=_('Check this if you want to automatically assign any existing tags to this post based on its content.'))
-    followup_for = models.ManyToManyField('self', symmetrical=False, blank=True, help_text=_('Select any other posts that this post follows up on.'), related_name='followups')
+    auto_tag = models.BooleanField(default=AUTO_TAG, blank=True,
+                                   help_text=_('Check this if you want to '
+                                               'automatically assign any '
+                                               'existing tags to this post '
+                                               'based on its content.'))
+    followup_for = models.ManyToManyField('self', symmetrical=False,
+                                          blank=True,
+                                          help_text=_('Select any other posts '
+                                                      'that this post follows '
+                                                      'up on.'),
+                                          related_name='followups')
     related_posts = models.ManyToManyField('self', blank=True)
 
     objects = models.Manager()
@@ -435,12 +490,14 @@ class Post(PostBase):
         """
 
         if not self.auto_tag:
-            log.debug('Post "%s" (ID: %s) is not marked for auto-tagging. Skipping.' % (self.title, self.pk))
+            log.debug('Post "%s" (ID: %s) is not marked for auto-tagging. '
+                      'Skipping.' % (self.title, self.pk))
             return False
 
         # don't clobber any existing tags!
         existing_ids = [t.id for t in self.tags.all()]
-        log.debug('Post %s already has these tags: %s' % (self.pk, existing_ids))
+        log.debug('Post %s already has these tags: %s'
+                  % (self.pk, existing_ids))
 
         unused = Tag.objects.all()
         unused = unused.exclude(id__in=existing_ids)
@@ -450,7 +507,8 @@ class Post(PostBase):
         for tag in unused:
             regex = re.compile(r'\b%s\b' % tag.name, re.I)
             if any(regex.search(text) for text in to_search):
-                log.debug('Applying Tag "%s" (%s) to Post %s' % (tag, tag.pk, self.pk))
+                log.debug('Applying Tag "%s" (%s) to Post %s'
+                          % (tag, tag.pk, self.pk))
                 self.tags.add(tag)
                 found = True
 
@@ -510,12 +568,15 @@ class Post(PostBase):
     @models.permalink
     def get_absolute_url(self):
         if not WITHOUT_SETS:
-            return ('mb-post-detail', (self.blog.blog_set.slug, self.blog.slug, self.publish_date.year, self.slug))
+            return ('mb-post-detail', (self.blog.blog_set.slug, self.blog.slug,
+                                       self.publish_date.year, self.slug))
         else:
-            return ('mb-post-detail', (self.blog.slug, self.publish_date.year, self.slug))
+            return ('mb-post-detail', (self.blog.slug, self.publish_date.year,
+                                       self.slug))
 
 class Attachment(models.Model):
-    upload_to = lambda inst, fn: 'attach/%s/%s/%s' % (datetime.now().year, inst.post.slug, fn)
+    upload_to = lambda inst, fn: 'attach/%s/%s/%s' % (datetime.now().year,
+                                                      inst.post.slug, fn)
 
     post = models.ForeignKey(Post, related_name='attachments')
     attachment = models.FileField(upload_to=upload_to)
