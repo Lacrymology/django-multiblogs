@@ -449,6 +449,7 @@ LANGUAGE_CHOICES = getattr(settings, 'LANGUAGES',
 class Post(PostBase):
     blog = models.ForeignKey(Blog)
     language = models.CharField(max_length=8, choices=LANGUAGE_CHOICES,
+                                blank=True, default="",
                                 help_text=_("Language for this post. if left "
                                             "blank, the post'll show in all "
                                             "languages."))

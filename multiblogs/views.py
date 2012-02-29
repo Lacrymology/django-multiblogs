@@ -44,9 +44,10 @@ class PostYearListView(ListView):
                     blog__slug=self.kwargs['blog_slug'],
                     publish_date__year=self.kwargs['year']))
         else:
-            queryset = Post.published_objects.all().filter(
-                blog__slug=self.kwargs['slug'],
-                publish_date__year=self.kwargs['year'])
+            queryset = Post.published_objects.filter(
+                language__in=(self.request.LANGUAGE_CODE, "")).filter(
+                  blog__slug=self.kwargs['slug'],
+                  publish_date__year=self.kwargs['year'])
         return queryset
 
 class PostDetailView(DetailView):
@@ -60,10 +61,11 @@ class PostDetailView(DetailView):
                 blog__slug=self.kwargs['blog_slug'],
                 publish_date__year=self.kwargs['year'])
         else:
-            queryset = Post.published_objects.all().filter(
-                blog__slug=self.kwargs['blog_slug'],
-                publish_date__year=self.kwargs['year'],
-                slug=self.kwargs['slug'])
+            queryset = Post.published_objects.filter(
+                language__in=(self.request.LANGUAGE_CODE, "")).filter(
+                  blog__slug=self.kwargs['blog_slug'],
+                  publish_date__year=self.kwargs['year'],
+                  slug=self.kwargs['slug'])
         return queryset
 
 class PostCreateView(CreateView):
